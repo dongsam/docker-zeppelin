@@ -11,9 +11,9 @@ MAINTAINER Richard Drew <richardkdrew@gmail.com>
 
 # install dependencies
 RUN buildDeps='curl build-essential git python python-setuptools python-dev python-numpy' \
-	&& apt-get update \
-	&& apt-get install -y $buildDeps --no-install-recommends \
-	&& apt-get clean
+    && apt-get update \
+    && apt-get install -y $buildDeps --no-install-recommends \
+    && apt-get clean
 
 RUN easy_install py4j
 
@@ -36,7 +36,7 @@ ENV ZEPPELIN_HOME /usr/local/zeppelin
 
 # get Zeppelin
 RUN mkdir -p ${ZEPPELIN_HOME} \
-	&& mkdir -p ${ZEPPELIN_HOME}/logs \
+    && mkdir -p ${ZEPPELIN_HOME}/logs \
     && mkdir -p ${ZEPPELIN_HOME}/run \
     && mkdir -p ${ZEPPELIN_HOME}/data \
     && cd /usr/local \
@@ -46,7 +46,7 @@ RUN mkdir -p ${ZEPPELIN_HOME} \
     && rm -fr /usr/local/incubator-zeppelin
 
 # install and configure Zeppelin
-RUN	git config --global url.https://github.com/.insteadOf git://github.com/ \
+RUN git config --global url.https://github.com/.insteadOf git://github.com/ \
     && cd ${ZEPPELIN_HOME} \
     && mvn package -Dspark.version=${APACHE_SPARK_VERSION} -Pspark-1.5 -Dhadoop.version=2.6.0 -Phadoop-2.6 -Pyarn -DskipTests \
     #&& mvn clean package -DskipTests \
@@ -54,10 +54,25 @@ RUN	git config --global url.https://github.com/.insteadOf git://github.com/ \
     && apt-get purge -y --auto-remove $buildDeps \
     && rm -rf /var/lib/apt/lists/*
 
+
+# install ipython
+RUN apt-get -yqq update
+RUN apt-get -yqq install python-pip
+RUN apt-get -yqq install python-dev
+RUN apt-get -yqq install libzmq-dev
+RUN pip install ipython
+RUN pip install pyzmq
+RUN pip install jupyter
+RUN cd ${ZEPPELIN_HOME}/data
+RUN wget https://gist.githubusercontent.com/dongsam/a70ec64cf91eb1bd22d7/raw/210272c31451f811d97a63d2c54022ce92d2b30e/log.txt
+
+
+
 WORKDIR ${ZEPPELIN_HOME}
 
 VOLUME [${ZEPPELIN_HOME}/notebook, ${ZEPPELIN_HOME}/logs]
 
-EXPOSE 8080 8081 4040
+EXPOSE 8080 8081 8888 4040
 
 CMD ["/usr/local/zeppelin/bin/zeppelin.sh"]
+CMD ["IPYTHON_OPTS='notebook' ${SPARK_HOME}/bin/pyspark"]
